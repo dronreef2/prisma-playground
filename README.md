@@ -1,3 +1,5 @@
+<img src="URL da Imagem" alt=["Texto Alternativo"](https://github.com/dronreef2/prisma-playground/blob/main/public/images/playground-screenshot.png)>
+
 # Prisma Playground - Interface Educacional
 
 Um playground interativo para aprender e experimentar com Prisma ORM, especialmente projetado para contornar limitações do Windows e fornecer uma experiência de aprendizado completa.
