@@ -27,9 +27,10 @@
     "database"
   ],
   "author": "Seu Nome",
-  "license": "MIT",
-  "devDependencies": {
+  "license": "MIT",  "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
     "cross-env": "^7.0.3",
     "prisma": "^6.9.0",
     "typescript": "^5.0.0"

@@ -38,14 +38,18 @@ jobs:
             echo "manager=yarn" >> $GITHUB_OUTPUT
             echo "command=install" >> $GITHUB_OUTPUT
             echo "runner=yarn" >> $GITHUB_OUTPUT
+            echo "Detected Yarn package manager"
             exit 0
           elif [ -f "${{ github.workspace }}/package.json" ]; then
             echo "manager=npm" >> $GITHUB_OUTPUT
             echo "command=ci" >> $GITHUB_OUTPUT
             echo "runner=npx --no-install" >> $GITHUB_OUTPUT
+            echo "Detected NPM package manager"
             exit 0
           else
             echo "Unable to determine package manager"
+            echo "Ensure that yarn.lock or package.json exists in the repository root."
+            ls -la "${{ github.workspace }}"
             exit 1
           fi
       - name: Setup Node
