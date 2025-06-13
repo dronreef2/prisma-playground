@@ -38,7 +38,8 @@ export async function createSession(): Promise<SessionResponse> {
 // Service para API Query
 export async function executeQuery(
   sessionId: string, 
-  query: string
+  query: string,
+  usePublicSchema: boolean = true
 ): Promise<QueryResponse> {
   if (!areServerApisAvailable()) {
     return mockQueryAPI(query);
@@ -52,7 +53,8 @@ export async function executeQuery(
       },
       body: JSON.stringify({
         sessionId,
-        query
+        query,
+        usePublicSchema
       })
     });
     

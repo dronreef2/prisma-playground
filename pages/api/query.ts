@@ -4,6 +4,7 @@ import { createVirtualPrismaClient } from '../../src/database/virtual-prisma-cli
 type QueryRequest = {
   sessionId: string
   query: string
+  usePublicSchema?: boolean // Novo: usar schema público ou isolado
 }
 
 type QueryResponse = {
@@ -274,7 +275,7 @@ export default async function handler(
     })
   }
 
-  const { sessionId, query }: QueryRequest = req.body
+  const { sessionId, query, usePublicSchema = true }: QueryRequest = req.body
 
   if (!sessionId || !query) {
     return res.status(400).json({
@@ -296,11 +297,9 @@ export default async function handler(
     // Validar ação permitida
     if (!ALLOWED_ACTIONS.includes(action)) {
       throw new Error(`Ação '${action}' não é permitida. Ações permitidas: ${ALLOWED_ACTIONS.join(', ')}`)
-    }
-
-    // Criar cliente Prisma virtual para a sessão (sem problemas EPERM)
+    }    // Criar cliente Prisma virtual para a sessão (sem problemas EPERM)
     console.log(`🎯 [Query API] Criando cliente virtual para sessão: ${sessionId}`)
-    prisma = await createVirtualPrismaClient(sessionId)
+    prisma = await createVirtualPrismaClient(sessionId, usePublicSchema)
     console.log(`✅ [Query API] Cliente virtual criado`)
 
     // Verificar se o modelo existe (validação básica)

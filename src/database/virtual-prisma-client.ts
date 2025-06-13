@@ -144,8 +144,8 @@ const SCHEMA_MAPPING = {
 /**
  * Criar cliente Prisma virtual para uma sessão
  */
-export async function createVirtualPrismaClient(sessionId: string): Promise<VirtualPrismaClient> {
-  console.log(`🎯 [Virtual Prisma] Criando cliente virtual para sessão: ${sessionId}`)
+export async function createVirtualPrismaClient(sessionId: string, usePublicSchema: boolean = true): Promise<VirtualPrismaClient> {
+  console.log(`🎯 [Virtual Prisma] Criando cliente virtual para sessão: ${sessionId} (schema: ${usePublicSchema ? 'public' : sessionId})`)
   
   // Criar conexão PostgreSQL direta
   const client = new Client({
@@ -155,10 +155,13 @@ export async function createVirtualPrismaClient(sessionId: string): Promise<Virt
   
   await client.connect()
   console.log(`✅ [Virtual Prisma] Conectado ao PostgreSQL`)
+  // Configurar schema baseado na preferência do usuário
+  const targetSchema = usePublicSchema ? 'public' : sessionId
+  await client.query(`SET search_path TO ${usePublicSchema ? 'public' : `"${sessionId}"`}`)
+  console.log(`🔧 [Virtual Prisma] Schema configurado: ${targetSchema}`)
   
-  // Configurar schema específico
-  await client.query(`SET search_path TO "${sessionId}", public`)
-  console.log(`🔧 [Virtual Prisma] Schema configurado: ${sessionId}`)
+  // Verificar se as tabelas existem no schema escolhido
+  await ensureTablesExist(client, targetSchema)
   
   // Função para construir queries SELECT
   function buildSelectQuery(modelName: string, args: any = {}) {
@@ -467,4 +470,106 @@ export async function createVirtualPrismaClient(sessionId: string): Promise<Virt
   
   console.log(`✅ [Virtual Prisma] Cliente virtual criado para sessão: ${sessionId}`)
   return virtualClient
+}
+
+/**
+ * Função para garantir que as tabelas existam no schema
+ */
+async function ensureTablesExist(client: Client, schemaName: string) {
+  try {
+    console.log(`🔍 [Virtual Prisma] Verificando tabelas no schema: ${schemaName}`)
+    
+    // Para schema público, não precisamos criar o schema
+    if (schemaName !== 'public') {
+      await client.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`)
+    }
+    
+    // Verificar se as tabelas já existem (verificando apenas as tabelas do Prisma)
+    const existingTables = await client.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = $1 AND table_name IN ('users', 'profiles', 'posts', 'categories', 'tags', 'PostTag', 'comments')
+    `, [schemaName])
+    
+    const existingTableNames = existingTables.rows.map(row => row.table_name)
+    const missingTables = ['users', 'profiles', 'posts', 'categories', 'tags', 'PostTag', 'comments']
+      .filter(table => !existingTableNames.includes(table))
+    
+    if (missingTables.length > 0) {
+      console.log(`📦 [Virtual Prisma] Criando tabelas faltantes: ${missingTables.join(', ')}`)
+      
+      // SQL para criar apenas as tabelas que não existem (sem schema prefix para public)
+      const schemaPrefix = schemaName === 'public' ? '' : `"${schemaName}".`
+      const createTablesSQL = `
+        -- Users table (se não existir)
+        CREATE TABLE IF NOT EXISTS ${schemaPrefix}users (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          bio TEXT,
+          "createdAt" TIMESTAMP DEFAULT NOW(),
+          "updatedAt" TIMESTAMP DEFAULT NOW()
+        );
+
+        -- Profiles table (se não existir)
+        CREATE TABLE IF NOT EXISTS ${schemaPrefix}profiles (
+          id SERIAL PRIMARY KEY,
+          avatar VARCHAR(255),
+          website VARCHAR(255),
+          twitter VARCHAR(255),
+          "userId" INTEGER UNIQUE REFERENCES ${schemaPrefix}users(id) ON DELETE CASCADE
+        );
+
+        -- Categories table (se não existir)
+        CREATE TABLE IF NOT EXISTS ${schemaPrefix}categories (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          color VARCHAR(7)
+        );
+
+        -- Posts table (se não existir)
+        CREATE TABLE IF NOT EXISTS ${schemaPrefix}posts (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          content TEXT,
+          published BOOLEAN DEFAULT FALSE,
+          views INTEGER DEFAULT 0,
+          "authorId" INTEGER REFERENCES ${schemaPrefix}users(id) ON DELETE CASCADE,
+          "categoryId" INTEGER REFERENCES ${schemaPrefix}categories(id),
+          "createdAt" TIMESTAMP DEFAULT NOW(),
+          "updatedAt" TIMESTAMP DEFAULT NOW()
+        );
+
+        -- Tags table (se não existir)
+        CREATE TABLE IF NOT EXISTS ${schemaPrefix}tags (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) UNIQUE NOT NULL
+        );
+
+        -- PostTags table (Many-to-Many) (se não existir)
+        CREATE TABLE IF NOT EXISTS ${schemaPrefix}"PostTag" (
+          "postId" INTEGER REFERENCES ${schemaPrefix}posts(id) ON DELETE CASCADE,
+          "tagId" INTEGER REFERENCES ${schemaPrefix}tags(id) ON DELETE CASCADE,
+          PRIMARY KEY ("postId", "tagId")
+        );
+
+        -- Comments table (se não existir)
+        CREATE TABLE IF NOT EXISTS ${schemaPrefix}comments (
+          id SERIAL PRIMARY KEY,
+          content TEXT NOT NULL,
+          "postId" INTEGER REFERENCES ${schemaPrefix}posts(id) ON DELETE CASCADE,
+          "authorId" INTEGER REFERENCES ${schemaPrefix}users(id) ON DELETE CASCADE,
+          "createdAt" TIMESTAMP DEFAULT NOW()
+        );
+      `
+      
+      await client.query(createTablesSQL)
+      console.log(`✅ [Virtual Prisma] Tabelas criadas no schema: ${schemaName}`)
+    } else {
+      console.log(`✅ [Virtual Prisma] Todas as tabelas já existem no schema: ${schemaName}`)
+    }
+  } catch (error) {
+    console.error(`❌ [Virtual Prisma] Erro ao verificar/criar tabelas:`, error)
+  }
 }

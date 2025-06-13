@@ -36,6 +36,7 @@ interface PlaygroundState {
   autoScroll: boolean
   activePanel: 'schema' | 'logs' | 'query'
   queryHistory: Array<{ query: string; timestamp: Date; success: boolean }>
+  usePublicSchema: boolean // Novo: usar schema público do Supabase ou schemas isolados
 }
 
 export default function PrismaPlayground() {
@@ -280,14 +281,14 @@ console.log(usuarioComPerfil)
 // console.log(postsPublicados)
 // console.log(estatisticas)
 // console.log(transacao)`,logs: [],
-    queryResult: null,
-    isLoading: false,
+    queryResult: null,    isLoading: false,
     needsMigration: false,
     lastMigratedSchema: '',    clientGenerated: false,
     logsFilter: 'all',
     autoScroll: true,
     activePanel: 'schema',
-    queryHistory: [] as Array<{ query: string; timestamp: Date; success: boolean }>
+    queryHistory: [] as Array<{ query: string; timestamp: Date; success: boolean }>,
+    usePublicSchema: true // Por padrão, usar schema público do Supabase
   })
   // Função para adicionar logs estruturados
   const addLog = (
@@ -512,9 +513,8 @@ console.log(usuarioComPerfil)
     setState(prev => ({ ...prev, isLoading: true, queryResult: null }))
     addLog('info', '🔄 Executando query...', 'query')
 
-    try {
-      // Usar nosso serviço de API que funciona em todos os ambientes
-      const data = await executeQuery(state.sessionId, state.query)
+    try {      // Usar nosso serviço de API que funciona em todos os ambientes
+      const data = await executeQuery(state.sessionId, state.query, state.usePublicSchema)
       
       // Processar logs da API
       if (data.logs && data.logs.length > 0) {
@@ -1116,8 +1116,27 @@ console.log(postsOtimizados)`
             <div className="panel-header">
               <h3>⚡ Ações & Logs</h3>
             </div>
-            
-            <div className="actions">              <button 
+              <div className="actions">              
+              {/* Toggle para Schema Público/Privado */}
+              <div className="schema-mode-toggle">
+                <label>
+                  <input 
+                    type="checkbox" 
+                    checked={state.usePublicSchema}
+                    onChange={(e) => setState(prev => ({ ...prev, usePublicSchema: e.target.checked }))}
+                  />
+                  <span className="toggle-text">
+                    {state.usePublicSchema ? '🌐 Schema Público (Supabase)' : '🔒 Schema Isolado (Sandbox)'}
+                  </span>
+                </label>
+                <small className="schema-explanation">
+                  {state.usePublicSchema 
+                    ? 'Os dados aparecerão no seu dashboard do Supabase' 
+                    : 'Dados isolados por sessão (não afeta o banco principal)'}
+                </small>
+              </div>
+
+              <button 
                 className={`action-btn migrate-btn ${state.needsMigration ? 'needs-migration' : ''}`}
                 onClick={handleMigrate}
                 disabled={state.isLoading || !state.sessionId}
@@ -1592,24 +1611,54 @@ console.log(postsOtimizados)`
 
         .editor-container {
           flex: 1;
-          min-height: 0;
-        }
-
-        .actions {
-          padding: 1rem;
+          min-height: 0;        }        .actions {
+          padding: 0.75rem;
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.4rem;
         }
 
-        .action-btn {
+        /* Toggle para Schema Público/Privado */
+        .schema-mode-toggle {
+          background: #f8f9fa;
+          border: 1px solid #e9ecef;
+          border-radius: 6px;
+          padding: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .schema-mode-toggle label {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          cursor: pointer;
+          margin: 0;
+        }
+
+        .schema-mode-toggle input[type="checkbox"] {
+          accent-color: #0e639c;
+        }
+
+        .toggle-text {
+          font-size: 0.85rem;
+          font-weight: 500;
+          color: #495057;
+        }
+
+        .schema-explanation {
+          display: block;
+          font-size: 0.75rem;
+          color: #6c757d;
+          margin-top: 0.25rem;
+          line-height: 1.3;
+        }.action-btn {
           background: #0e639c;
           color: white;
           border: none;
-          padding: 0.75rem 1rem;
+          padding: 0.5rem 0.75rem;
           border-radius: 4px;
           cursor: pointer;
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           transition: background-color 0.2s;
         }
 
@@ -1665,42 +1714,36 @@ console.log(postsOtimizados)`
 
         .execute-btn:hover:not(:disabled) {
           background: #e6e6bb;
-        }
-
-        /* Estilos para seção de exemplos educacionais */
+        }        /* Seção de Exemplos Educacionais - Compacta */
         .examples-section {
-          margin-top: 1rem;
+          margin-top: 0.75rem;
           border-top: 1px solid #3e3e42;
-          padding-top: 1rem;
+          padding-top: 0.75rem;
         }
 
         .examples-header {
           padding: 0 1rem;
-          margin-bottom: 0.75rem;
+          margin-bottom: 0.5rem;
         }
 
         .examples-header h4 {
           margin: 0;
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           color: #cccccc;
           font-weight: 600;
-        }
-
-        .examples-grid {
+        }        .examples-grid {
           padding: 0 1rem;
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 0.5rem;
-        }
-
-        .example-btn {
+          gap: 0.4rem;
+        }.example-btn {
           background: #2d2d30;
           color: #cccccc;
           border: 1px solid #3e3e42;
-          padding: 0.6rem 0.8rem;
-          border-radius: 6px;
+          padding: 0.4rem 0.6rem;
+          border-radius: 4px;
           cursor: pointer;
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           transition: all 0.2s ease;
           text-align: center;
           font-weight: 500;
@@ -1953,13 +1996,11 @@ console.log(postsOtimizados)`
           font-size: 0.75rem;
           color: #ba68c8;
           overflow-x: auto;
-        }
-
-        /* Estilos do Histórico de Queries */
+        }        /* Estilos do Histórico de Queries - Expandido */
         .history-section {
-          margin-top: 1rem;
+          margin-top: 0.75rem;
           background: #2a2a2a;
-          border-radius: 8px;
+          border-radius: 6px;
           overflow: hidden;
         }
 
@@ -1976,6 +2017,7 @@ console.log(postsOtimizados)`
           margin: 0;
           font-size: 0.8rem;
           color: #cccccc;
+          font-weight: 600;
         }
 
         .history-count {
@@ -1988,7 +2030,7 @@ console.log(postsOtimizados)`
         }
 
         .history-list {
-          max-height: 120px;
+          max-height: 180px;
           overflow-y: auto;
         }
 
