@@ -1,0 +1,119 @@
+// 🎓 PRISMA SCHEMA EDUCACIONAL
+// Este é um exemplo completo para aprender Prisma ORM
+// Documentação: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// 👤 Modelo de Usuário com relacionamentos
+model User {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  name        String
+  bio         String?   // Campo opcional
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // 📝 Relacionamentos
+  posts       Post[]    // Um usuário tem muitos posts
+  profile     Profile?  // Um usuário tem um perfil (opcional)
+  comments    Comment[] // Um usuário tem muitos comentários
+  
+  @@map("users") // Nome da tabela no banco
+}
+
+// 👤 Perfil do usuário (relacionamento 1:1)
+model Profile {
+  id        Int     @id @default(autoincrement())
+  avatar    String?
+  website   String?
+  twitter   String?
+  userId    Int     @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("profiles")
+}
+
+// 📄 Posts com categorias e tags
+model Post {
+  id          Int       @id @default(autoincrement())
+  title       String
+  content     String?
+  published   Boolean   @default(false)
+  views       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // 🔗 Relacionamentos
+  authorId    Int
+  author      User      @relation(fields: [authorId], references: [id])
+  categoryId  Int?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  comments    Comment[]
+  postTags    PostTag[] // Relacionamento muitos-para-muitos com tags
+  
+  @@index([authorId])
+  @@index([published, createdAt])
+  @@map("posts")
+}
+
+// 🏷️ Categorias para organizar posts
+model Category {
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  description String?
+  color       String @default("#3B82F6")
+  posts       Post[]
+  
+  @@map("categories")
+}
+
+// 🏷️ Tags para posts (relacionamento N:N)
+model Tag {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  postTags PostTag[]
+  
+  @@map("tags")
+}
+
+// 🔗 Tabela de junção para Posts e Tags
+model PostTag {
+  postId Int
+  tagId  Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
+
+// 💬 Comentários com threading (respostas)
+model Comment {
+  id        Int       @id @default(autoincrement())
+  content   String
+  createdAt DateTime  @default(now())
+  
+  // 🔗 Relacionamentos
+  authorId  Int
+  author    User      @relation(fields: [authorId], references: [id])
+  postId    Int
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  // 💬 Threading: comentário pode responder outro comentário
+  parentId  Int?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  
+  @@index([postId])
+  @@index([authorId])
+  @@map("comments")
+}

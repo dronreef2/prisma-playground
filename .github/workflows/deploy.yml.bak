@@ -1,0 +1,42 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # ou o nome da sua branch principal
+
+# Permissões necessárias para o GitHub Actions
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js ⚙️
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install Dependencies 📦
+        run: npm ci
+        
+      - name: Build and Export 🔧
+        run: npm run deploy:github
+        env:
+          # Variáveis de ambiente mock para o build
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres' }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL || 'postgresql://postgres:postgres@localhost:5432/postgres' }}
+          
+      - name: Add .nojekyll file 🚫
+        run: touch out/.nojekyll
+        
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
+        with:
+          branch: gh-pages # branch onde os arquivos estáticos serão publicados
+          folder: out # pasta que contém os arquivos estáticos

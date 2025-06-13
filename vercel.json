@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "name": "prisma-orm-tutorial",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "env": {
+    "DATABASE_URL": "@database-url",
+    "DIRECT_URL": "@direct-url"
+  }
+}

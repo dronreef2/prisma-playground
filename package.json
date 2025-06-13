@@ -1,0 +1,47 @@
+{
+  "name": "prisma-orm-tutorial",
+  "version": "1.0.0",
+  "description": "Tutorial completo de Prisma ORM",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "playground": "next dev",
+    "export": "next build",
+    "deploy": "npm run build && touch out/.nojekyll",
+    "deploy:github": "cross-env GITHUB_ACTIONS=true npm run build && (echo > out/.nojekyll || touch out/.nojekyll)",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:push": "prisma db push",
+    "db:reset": "prisma migrate reset",
+    "clean": "rimraf .next node_modules/.cache",
+    "clean:all": "rimraf .next node_modules/.cache node_modules && npm install",
+    "dev:clean": "npm run clean && npm run dev"
+  },
+  "keywords": [
+    "prisma",
+    "orm",
+    "typescript",
+    "database"
+  ],
+  "author": "Seu Nome",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "cross-env": "^7.0.3",
+    "prisma": "^6.9.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@prisma/client": "^6.9.0",
+    "@types/pg": "^8.15.4",
+    "dotenv": "^16.5.0",
+    "next": "^15.3.3",
+    "pg": "^8.16.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  }
+}
