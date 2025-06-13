@@ -8,9 +8,8 @@ const nextConfig = {
       config.cache = false
     }
     return config
-  },
-  // Configuração para GitHub Pages
-  basePath: process.env.GITHUB_ACTIONS ? '/PrismaORM' : '', // Substitua 'PrismaORM' pelo nome do seu repositório
+  },  // Configuração para GitHub Pages
+  basePath: process.env.GITHUB_ACTIONS ? '/prisma-playground' : '', // Nome correto do repositório
   trailingSlash: true,
   images: {
     unoptimized: true,

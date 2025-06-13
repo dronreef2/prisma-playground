@@ -18,7 +18,8 @@ const CACHE_MAX_AGE = 30 * 60 * 1000 // 30 minutos
 // Limpeza automática do cache
 setInterval(() => {
   const now = Date.now()
-  for (const [sessionId, clientData] of clientCache.entries()) {
+  const entries = Array.from(clientCache.entries())
+  for (const [sessionId, clientData] of entries) {
     if (now - clientData.createdAt > CACHE_MAX_AGE) {
       console.log(`🧹 [Playground Client] Removendo cliente expirado: ${sessionId}`)
       clientCache.delete(sessionId)
