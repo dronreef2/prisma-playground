@@ -1,4 +1,4 @@
-<img src="URL da Imagem" alt=["Texto Alternativo"](https://github.com/dronreef2/prisma-playground/blob/main/public/images/playground-screenshot.png)>
+<img src="URL da Imagem" alt=https://github.com/dronreef2/prisma-playground/blob/main/public/images/playground-screenshot.png>
 
 # Prisma Playground - Interface Educacional
 
