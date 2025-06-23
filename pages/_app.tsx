@@ -11,7 +11,7 @@ export default function App({ Component, pageProps }: AppProps) {
     setIsGithubEnvironment(isGitHubPages())
     
     if (isGitHubPages()) {
-      console.log('🌐 Executando no ambiente GitHub Pages - APIs simuladas estão sendo usadas')
+      console.log('GitHub Pages - APIs simuladas')
     }
   }, [])
 
